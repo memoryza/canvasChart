@@ -1,241 +1,451 @@
-<div style="height:100px;background:#ccc;"></div>
-
-<canvas id="test"></canvas>
-<script type="text/javascript" src="jquery.js"></script>
-<meta charset="utf8">
-<script type="text/javascript" src="canvas.js"></script>
-<style type="text/css">
-    #res {
-        width: 200px;
-        display: none;
-        position: absolute;
-        background: #ffffff;
-        opacity: 0.5;
-        height: 80px;
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <title>百度股市通 - 选股更轻松</title>
+</head>
+<body>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+    <!--[if lt IE 9]><script type="text/javascript" src="flashcanvas.js"></script><![endif]-->
+    <style type="text/css">
+    * {
+        padding: 0;
+        margin: 0;
     }
-</style>
-<div id="res"></div>
-<script type="text/javascript">
-    var $log = $('#res');
-    var pieCanvas = new pieChart({
-        id: 'test',
-        width:  362,
-        height: 288,
-        bgcolor: '#f9fafe',
-        animate: true,
-        title: {
-            text: '今日资金流向',
-            subtext: '(净流入123亿)',
-            x: 20,
-            y: 30
-        },
-        unit: {
-            names: ['元', '万元', '亿元'],
-            scales: [1, 10000, 100000000]
-        },
-        outercircle:{
-            radius: 64,
-            color: '#cccccc'
-        },
-        innercircle: {
-            radius: 22,
-            opacity: 0.4,
-            name: '今日资金',
-        },
-        needtips: false,
-        // 自己订制tips层样式
-        // tipfunc: function (data) {
-        //     // console.log(data)
-        // },
-        series:{
-            radius: 60,//饼图半径
-            decimal: 0,
-            data: [
-                {name: '主力流入', value: 176780000},
-                {name: '散户流入', value: 674500000},
-                {name: '散户流出', value: 47450000},
-                {name: '主力流出', value: 176780000},
-                {name: '测试流出', value: 1767800}
-            ]
+    </style>
+    <div style="height:200px;"></div>
+    <canvas id="animate-canvas"></canvas>
+    <canvas id="staticCanvas"></canvas>
+    <canvas id="noTipCanvas"></canvas>
+    <canvas id="columncanvas"></canvas>
+    <canvas id="columncanvas1"></canvas>
+    <canvas id="columncanvas2"></canvas>
+    <canvas id="columncanvas3"></canvas>
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="chart.js"></script>
+    <style type="text/css">
+        #res {
+            width: 200px;
+            display: none;
+            position: absolute;
+            background: #ffffff;
+            opacity: 0.5;
+            height: 80px;
         }
-    });
-
-    // $(document).on('mousemove', '#test', function(e) {
-    //     var data = pieCanvas.getAreaData(e); 
-    //     var text = '';
-    //     if (data) {
-    //         for (var i in data) {
-    //             if (i && data.hasOwnProperty(i)) {
-    //                 text += i + ':' + data[i];
-    //             }
-    //         }
-    //     }
-    //     pieCanvas.log(text);
-    // })
-</script>
-<div></div>
-<canvas id="wang" width="400" height="400"></canvas>
-<span id="coord"></span>
-<script type="text/javascript">
-    var $coord = $('#coord');
-    var canvas = document.getElementById('wang');
-    var ctx = canvas.getContext('2d');
-    ctx.beginPath();
-    ctx.moveTo(0, 200);
-    ctx.lineTo(400, 200);
-    ctx.moveTo(200, 0);
-    ctx.lineTo(200, 400);
-    ctx.strokeStyle = '#000000';
-    ctx.closePath();
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(200, 200, 80, 80, 0, Math.PI * 2);
-    ctx.stroke();
-    $(document).on('mousemove', '#wang', function(e) {
-        var coord = getRelativePosition(e);
-        var angle = getSide(coord, coord);
-        angle ? drawAvgPoint(angle, coord) : null;
-    });
-
-    function getCoord(x, y) {
-        return {
-            x: x - 200,
-            y: 200 - y
-        }
-    }
-    function drawPoint(angle, coord) {
-        if (angle) console.log(coord)
-    }
-    function drawAvgPoint(arcAngle) {
-        var newAngle = arcAngle;//计算sin需要弧度的转角
-        switch (true) {
-            case arcAngle >= Math.PI * 3/2:
-                newAngle = 2 * Math.PI - arcAngle;
-                break;
-            case arcAngle >= Math.PI:
-                newAngle = arcAngle - Math.PI;
-                break;
-            case arcAngle >= Math.PI / 2:
-                newAngle = Math.PI - arcAngle;
-                break;
+    </style>
+    <div id="res"></div>
+    <script type="text/javascript">
+    $(function () {
+        var timer = 0;
+        if ($.browser.msie && $.browser.version < 9) {
+            timer = 3000;
         }
 
-        var r = 80;
-        var sinAngle = Math.sin(newAngle);
-        var y = sinAngle * r;
-        var x = Math.sqrt(r*r - y*y);
-        console.log(sinAngle, x,y)
-        y += 6;
-        x += 6;
-        // console.log(x, y)
-        var newx, newy;
-        var cornerPoint;
-        switch (true) {
-            // 第一象限
-            case arcAngle >= Math.PI * 3/2:
-                newx = 200 + x;
-                newy = 200 - y;
-                cornerPoint = {
-                    sx: newx,
-                    sy: newy,
-                    cx: newx + 20,
-                    cy: newy - 20,
-                    ex: newx + 30,
-                    ey: newy - 20
+
+        setTimeout(function() {
+            var pieCanvas = new Chart.pieChart({
+                id: 'animate-canvas',
+                // width:  362,
+                // height: 288,
+                // bgcolor: '#f9fafe',
+                // animate: true,
+                title: {
+                    text: '今日资金流向',
+                    subtext: '(净流入123亿)',
+                    x: 20,
+                    y: 30
+                },
+                unit: {
+                    names: ['元', '万元', '亿元'],
+                    scales: [1, 10000, 100000000]
+                },
+                outercircle:{
+                    radius: 64,
+                    color: '#cccccc'
+                },
+                innercircle: {
+                    radius: 22,
+                    opacity: 0.4,
+                    name: '今日资金'
+                },
+                needtips: true,
+                series:{
+                    radius: 60,//饼图半径
+                    decimal: 0,
+                    data: [
+                        {name: '散户流出', value: 10964500000},
+                        {name: '主力流出', value: 52891767800},
+                        {name: '主力流入', value: 48766780000},
+                        {name: '散户流入', value: 10804500000}
+                    ]
                 }
-                break;
-            // 第二象限
-            case arcAngle >= Math.PI:
-                newx = 200 - x;
-                newy = 200 - y;
-                cornerPoint = {
-                    sx: newx,
-                    sy: newy,
-                    cx: newx - 20,
-                    cy: newy - 20,
-                    ex: newx - 30,
-                    ey: newy - 20
+            });
+            var staticanvas = new Chart.pieChart({
+                id: 'staticCanvas',
+                width:  362,
+                height: 288,
+                bgcolor: '#fff',
+                animate: false,
+                title: {
+                    text: '静态今日资金流向',
+                    subtext: '(净流入13亿)',
+                    x: 20,
+                    y: 30
+                },
+                unit: {
+                    names: ['元', '万元', '亿元'],
+                    scales: [1, 10000, 100000000]
+                },
+                outercircle:{
+                    radius: 64,
+                    color: '#cccccc'
+                },
+                innercircle: {
+                    radius: 22,
+                    opacity: 0.4,
+                    name: '今日资金'
+                },
+                needtips: true,
+                series:{
+                    radius: 60,//饼图半径
+                    decimal: 0,
+                    data: [
+                        {name: '散户流出', value: 1096450000},
+                        {name: '主力流出', value: 52891767800},
+                        {name: '主力流入', value: 48766780000},
+                        {name: '散户流入', value: 10804500000}
+                    ]
                 }
-                break;
-            // 第三象限
-            case arcAngle >= Math.PI / 2:
-                newx = 200 - x;
-                newy = 200 + y;
-                cornerPoint = {
-                    sx: newx,
-                    sy: newy,
-                    cx: newx - 20,
-                    cy: newy + 20,
-                    ex: newx - 30,
-                    ey: newy + 20
+            });
+            var staticanvas = new Chart.pieChart({
+                id: 'noTipCanvas',
+                width:  362,
+                height: 288,
+                bgcolor: '#fff',
+                animate: false,
+                title: {
+                    text: '没有提示今日资金流向',
+                    subtext: '',
+                    x: 20,
+                    y: 30
+                },
+                unit: {
+                    names: ['元', '万元', '亿元'],
+                    scales: [1, 10000, 100000000]
+                },
+                outercircle:{
+                    radius: 64,
+                    color: '#cccccc'
+                },
+                innercircle: {
+                    radius: 22,
+                    opacity: 0.4,
+                    name: '今日资金'
+                },
+                needtips: true,
+                series:{
+                    radius: 60,//饼图半径
+                    decimal: 0,
+                    data: [
+                        {name: '散户流出', value: 10964500000},
+                        {name: '主力流出', value: 52891767800},
+                        {name: '主力流入', value: 48766780000},
+                        {name: '散户流入', value: 1080450000}
+                    ]
                 }
-                break;
-            // 第四象限
-            default:
-                newx = 200 + x;
-                newy = 200 + y;
-                cornerPoint = {
-                    sx: newx,
-                    sy: newy,
-                    cx: newx + 20,
-                    cy: newy + 20,
-                    ex: newx + 30,
-                    ey: newy + 20
+            });
+             var column1 = new Chart.columnChart({
+                id: 'columncanvas',
+                width:  362,
+                height: 288,
+                bgcolor: '#f9fafe',
+                animate: true,
+                title: {
+                    text: '最近五日主力增减仓',
+                    x: 20,
+                    y: 30
+                },
+                unit: {
+                    names: ['元', '万元', '亿元'],
+                    scales: [1, 10000, 100000000]
+                },
+                needtips: false,
+                series:{
+                    decimal: 1,
+                    mark: true,
+                    data: [
+                        {name: '06-04', value: -202800.19},
+                        {name: '06-05', value: -85007.12},
+                        {name: '06-06', value: 608579.9},
+                        {name: '06-07', value: -608449},
+                        {name: '06-08', value: -449}
+                    ]
                 }
-        }
-        console.log(cornerPoint)
+            });
+            var column1 = new Chart.columnChart({
+                id: 'columncanvas1',
+                width:  230,
+                height: 143,
+                bgcolor: '#f9fafe',
+                horizonmargin: 32,
+                animate: true,
+                // title: {
+                //     text: '最近五日主力增减仓',
+                //     x: 20,
+                //     y: 30
+                // },
+                unit: {
+                    names: ['元', '万元', '亿元'],
+                    scales: [1, 10000, 100000000]
+                },
+                needtips: true,
+                series:{
+                    decimal: 1,
+                    mark: false,
+                    dataformat: '%',
+                    data: [
+                        {name: '营业收入', value: 45.3},
+                        {name: '净利润', value: -5.12}
+                    ]
+                }
+            });
+            var column2 = new Chart.columnChart({
+                id: 'columncanvas2',
+                width:  362,
+                height: 288,
+                bgcolor: '#f9fafe',
+                animate: false,
+                title: {
+                    text: '最近五日主力增减仓',
+                    x: 20,
+                    y: 30
+                },
+                unit: {
+                    names: ['元', '万元', '亿元'],
+                    scales: [1, 10000, 100000000]
+                },
+                needtips: true,
+                series:{
+                    decimal: 1,
+                    mark: true,
+                    data: [
+                        {name: '06-04', value: -202800.19},
+                        {name: '06-05', value: -85007.12},
+                        {name: '06-06', value: 608579.9},
+                        {name: '06-07', value: -608449},
+                        {name: '06-08', value: -449}
+                    ]
+                }
+            });
+            var column3 = new Chart.columnChart({
+                id: 'columncanvas3',
+                width:  230,
+                height: 143,
+                bgcolor: '#f9fafe',
+                horizonmargin: 32,
+                animate: false,
+                // title: {
+                //     text: '最近五日主力增减仓',
+                //     x: 20,
+                //     y: 30
+                // },
+                unit: {
+                    names: ['元', '万元', '亿元'],
+                    scales: [1, 10000, 100000000]
+                },
+                needtips: false,
+                series:{
+                    decimal: 1,
+                    mark: false,
+                    dataformat: '%',
+                    data: [
+                        {name: '营业收入', value: 45.3},
+                        {name: '净利润', value: -5.12}
+                    ]
+                }
+            });
+        }, timer)
+
+    })
+
+       
+        // $(document).on('mousemove', '#test', function(e) {
+        //     var data = pieCanvas.getAreaData(e); 
+        //     var text = '';
+        //     if (data) {
+        //         for (var i in data) {
+        //             if (i && data.hasOwnProperty(i)) {
+        //                 text += i + ':' + data[i];
+        //             }
+        //         }
+        //     }
+        //     pieCanvas.log(text);
+        // })
+    </script>
+    <!-- <span id="coord"></span>
+    <script type="text/javascript">
+        var $coord = $('#coord');
+        var canvas = document.getElementById('wang');
+        var ctx = canvas.getContext('2d');
         ctx.beginPath();
-        ctx.strokeStyle = '#f00000';
-        ctx.moveTo(cornerPoint.sx, cornerPoint.sy);
-        ctx.lineTo(cornerPoint.cx, cornerPoint.cy);
-        ctx.moveTo(cornerPoint.cx, cornerPoint.cy);
-        ctx.lineTo(cornerPoint.ex, cornerPoint.ey);
+        ctx.moveTo(0, 200);
+        ctx.lineTo(400, 200);
+        ctx.moveTo(200, 0);
+        ctx.lineTo(200, 400);
+        ctx.strokeStyle = '#000000';
         ctx.closePath();
         ctx.stroke();
-        
-        ctx.fillStyle = '#f00000';
-        ctx.arc(cornerPoint.ex, cornerPoint.ey, 2, 0, 2 *Math.PI);
-        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(200, 200, 80, 80, 0, Math.PI * 2);
+        ctx.stroke();
+        $(document).on('mousemove', '#wang', function(e) {
+            var coord = getRelativePosition(e);
+        var angle = getSide(coord, coord);
+            angle ? drawAvgPoint(angle, coord) : null;
+        });
 
-    }
-drawAvgPoint(0.7853981633974482);
-    function getSide(co) {
-        var r = Math.sqrt(co.x*co.x + co.y*co.y);
-        var arcAngle =  Math.asin(co.y/r);
-        var angle = Math.asin(co.y/r) / Math.PI / 2 * 360;
-        switch(true) {
-            case co.x <= 0:
-                angle = 180 - angle;
-                arcAngle = Math.PI - arcAngle;
-                break;
-            case co.x > 0 && co.y < 0:
-                angle = 360 + angle;
-                arcAngle = 2 * Math.PI + arcAngle;
-                break;
+        function getCoord(x, y) {
+            return {
+                x: x - 200,
+                y: 200 - y
+            }
         }
-        var text = '';
-        arcAngle = 2 * Math.PI - arcAngle;
-        if (r > 80) {
-            text = '跑出圆外部了';
-            return
-        } else {
-            text = '还在圆内部'
+        function drawPoint(angle, coord) {
+            if (angle) console.log(coord)
         }
-        $coord.html('x:' + co.x + ';y:' + co.y + text + '；角度：' + angle + '弧度：' + arcAngle);
-        return r < 80 ? arcAngle : false;
-    }
-    function getRelativePosition(e) {
-        var mouseX, mouseY,
-            canvas = e.target,
-            boundingRect = canvas.getBoundingClientRect();
-        if(e.touches) {
-            mouseX = e.touches[0].clientX - boundingRect.left;
-            mouseY = e.touches[0].clientY - boundingRect.top;
-        } else {
-            mouseX = e.clientX - boundingRect.left;
-            mouseY = e.clientY - boundingRect.top;
-        }
-        return getCoord(mouseX, mouseY);
-    }
+        function drawAvgPoint(arcAngle) {
+            var newAngle = arcAngle;//计算sin需要弧度的转角
+            switch (true) {
+                case arcAngle >= Math.PI * 3/2:
+                    newAngle = 2 * Math.PI - arcAngle;
+                    break;
+                case arcAngle >= Math.PI:
+                    newAngle = arcAngle - Math.PI;
+                    break;
+                case arcAngle >= Math.PI / 2:
+                    newAngle = Math.PI - arcAngle;
+                    break;
+            }
 
-</script>
+            var r = 80;
+            var sinAngle = Math.sin(newAngle);
+            var y = sinAngle * r;
+            var x = Math.sqrt(r*r - y*y);
+            console.log(sinAngle, x,y)
+            y += 6;
+            x += 6;
+            // console.log(x, y)
+            var newx, newy;
+            var cornerPoint;
+            switch (true) {
+                // 第一象限
+                case arcAngle >= Math.PI * 3/2:
+                    newx = 200 + x;
+                    newy = 200 - y;
+                    cornerPoint = {
+                        sx: newx,
+                        sy: newy,
+                        cx: newx + 20,
+                        cy: newy - 20,
+                        ex: newx + 30,
+                        ey: newy - 20
+                    }
+                    break;
+                // 第二象限
+                case arcAngle >= Math.PI:
+                    newx = 200 - x;
+                    newy = 200 - y;
+                    cornerPoint = {
+                        sx: newx,
+                        sy: newy,
+                        cx: newx - 20,
+                        cy: newy - 20,
+                        ex: newx - 30,
+                        ey: newy - 20
+                    }
+                    break;
+                // 第三象限
+                case arcAngle >= Math.PI / 2:
+                    newx = 200 - x;
+                    newy = 200 + y;
+                    cornerPoint = {
+                        sx: newx,
+                        sy: newy,
+                        cx: newx - 20,
+                        cy: newy + 20,
+                        ex: newx - 30,
+                        ey: newy + 20
+                    }
+                    break;
+                // 第四象限
+                default:
+                    newx = 200 + x;
+                    newy = 200 + y;
+                    cornerPoint = {
+                        sx: newx,
+                        sy: newy,
+                        cx: newx + 20,
+                        cy: newy + 20,
+                        ex: newx + 30,
+                        ey: newy + 20
+                    }
+            }
+            console.log(cornerPoint)
+            ctx.beginPath();
+            ctx.strokeStyle = '#f00000';
+            ctx.moveTo(cornerPoint.sx, cornerPoint.sy);
+            ctx.lineTo(cornerPoint.cx, cornerPoint.cy);
+            ctx.moveTo(cornerPoint.cx, cornerPoint.cy);
+            ctx.lineTo(cornerPoint.ex, cornerPoint.ey);
+            ctx.closePath();
+            ctx.stroke();
+            
+            ctx.fillStyle = '#f00000';
+            ctx.arc(cornerPoint.ex, cornerPoint.ey, 2, 0, 2 *Math.PI);
+            ctx.fill();
+
+        }
+        //均角的线
+    // drawAvgPoint(0.7853981633974482);
+        function getSide(co) {
+            var r = Math.sqrt(co.x*co.x + co.y*co.y);
+            var arcAngle =  Math.asin(co.y/r);
+            var angle = Math.asin(co.y/r) / Math.PI / 2 * 360;
+            switch(true) {
+                case co.x <= 0:
+                    angle = 180 - angle;
+                    arcAngle = Math.PI - arcAngle;
+                    break;
+                case co.x > 0 && co.y < 0:
+                    angle = 360 + angle;
+                    arcAngle = 2 * Math.PI + arcAngle;
+                    break;
+            }
+            var text = '';
+            arcAngle = 2 * Math.PI - arcAngle;
+            if (r > 80) {
+                text = '跑出圆外部了';
+                return
+            } else {
+                text = '还在圆内部'
+            }
+            $coord.html('x:' + co.x + ';y:' + co.y + text + '；角度：' + angle + '弧度：' + arcAngle);
+            return r < 80 ? arcAngle : false;
+        }
+        function getRelativePosition(e) {
+            var mouseX, mouseY,
+                canvas = e.target,
+                boundingRect = canvas.getBoundingClientRect();
+            if(e.touches) {
+                mouseX = e.touches[0].clientX - boundingRect.left;
+                mouseY = e.touches[0].clientY - boundingRect.top;
+            } else {
+                mouseX = e.clientX - boundingRect.left;
+                mouseY = e.clientY - boundingRect.top;
+            }
+            return getCoord(mouseX, mouseY);
+        }
+
+    </script> -->
+</body>
+</html>
