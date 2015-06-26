@@ -781,14 +781,15 @@ var Chart =  (function () {
         },
         paintRect: function (ctx, x, y, height, color, value) {
             // 清理上一次画好的
-            this.fillRect(x - 6, this.coord.y + (value > 0 ? 5 : -17), 36, 12);
+            var textWidth = this.ctx.measureText(value + this.conf.series.dataformat).width + 4;
+            this.fillRect(x - 2, this.coord.y + (trueVal > 0 ? 5 : -17), textWidth + 2, 12);
             ctx.beginPath();
             ctx.fillStyle = color;
             ctx.fillRect(x, y, this.conf.columnwidth, height);
             var params = {
                 text: value + this.conf.series.dataformat,
                 fillStyle: color,
-                x: x + this.conf.columnwidth / 2, // 文本放中间
+                x: x + textWidth / 2, // 文本放中间
                 y: this.coord.y + (value > 0 ? 11 : -11) // 跟水平线相距5px
             };
             this.paintText(params);
