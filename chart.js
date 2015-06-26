@@ -122,6 +122,12 @@ var Chart =  (function () {
         },
         hideLayer: function () {
             this.tipLayer.hide();
+        },
+        // canvas 1px宽度像素模糊
+        // 参见http://stackoverflow.com/questions/7530593/html5-canvas-and-line-width
+        //    http://www.silverlightchina.net/html/HTML_5/study/2013/0110/21355.html
+        fixBlurred: function (value) {
+            return value - 0.5;
         }
     });
     // 模拟类的行为
@@ -811,8 +817,8 @@ var Chart =  (function () {
             var ctx = t.ctx;
             ctx.beginPath();
             ctx.strokeStyle = '#cccccc';
-            ctx.moveTo(t.conf.margin, t.coord.y);
-            ctx.lineTo(conf.width - t.conf.margin, t.coord.y);
+            ctx.moveTo(t.conf.margin, t.fixBlurred(t.coord.y));
+            ctx.lineTo(conf.width - t.conf.margin, t.fixBlurred(t.coord.y));
             ctx.closePath();
             ctx.stroke();
             if (t.conf.animate) {
